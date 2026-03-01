@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List
-import re
+from textblob import TextBlob
 
 app = FastAPI()
 
@@ -17,37 +17,12 @@ app.add_middleware(
 class SentimentRequest(BaseModel):
     sentences: List[str]
 
-positive_words = {
-    "love","great","excellent","amazing","good","happy",
-    "wonderful","fantastic","awesome","nice","like",
-    "best","enjoy","pleasant","brilliant","perfect",
-    "super","positive","delight","smile","glad"
-}
-
-negative_words = {
-    "hate","terrible","bad","awful","worst","sad",
-    "angry","horrible","disappointed","poor",
-    "negative","pain","annoying","upset","cry",
-    "frustrated","dislike","disaster","fail","problem"
-}
-
 def analyze_sentiment(sentence: str) -> str:
-    text = sentence.lower()
+    polarity = TextBlob(sentence).sentiment.polarity
 
-    # strong phrase detection first
-    if any(phrase in text for phrase in ["not good", "very bad", "really bad", "so sad"]):
-        return "sad"
-    if any(phrase in text for phrase in ["very good", "really good", "so happy", "love it"]):
+    if polarity > 0.1:
         return "happy"
-
-    words = re.findall(r'\b\w+\b', text)
-
-    pos_score = sum(1 for word in words if word in positive_words)
-    neg_score = sum(1 for word in words if word in negative_words)
-
-    if pos_score > neg_score:
-        return "happy"
-    elif neg_score > pos_score:
+    elif polarity < -0.1:
         return "sad"
     else:
         return "neutral"
