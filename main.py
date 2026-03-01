@@ -1,9 +1,19 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List
 import re
 
 app = FastAPI()
+
+# ✅ ADD THIS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],   # allow all origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class SentimentRequest(BaseModel):
     sentences: List[str]
@@ -34,13 +44,12 @@ def analyze_sentiment(sentence: str) -> str:
 
 @app.post("/sentiment")
 def sentiment_analysis(request: SentimentRequest):
-    results = []
-
-    for sentence in request.sentences:
-        sentiment = analyze_sentiment(sentence)
-        results.append({
-            "sentence": sentence,
-            "sentiment": sentiment
-        })
-
-    return {"results": results}
+    return {
+        "results": [
+            {
+                "sentence": sentence,
+                "sentiment": analyze_sentiment(sentence)
+            }
+            for sentence in request.sentences
+        ]
+    }
